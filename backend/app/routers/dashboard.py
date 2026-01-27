@@ -28,9 +28,6 @@ async def get_stats(
                 and_(Device.is_active == True, Device.expires_at > now)
             )
         )
-        total_revenue = await db.scalar(
-            select(func.sum(Card.price)).where(Card.is_used == True)
-        ) or 0
     else:
         # 代理只看自己的数据
         total_users = await db.scalar(
@@ -65,20 +62,13 @@ async def get_stats(
             )
         else:
             active_devices = 0
-        
-        total_revenue = await db.scalar(
-            select(func.sum(Card.price)).where(
-                and_(Card.creator_id == current_user.id, Card.is_used == True)
-            )
-        ) or 0
     
     return DashboardStats(
         total_users=total_users or 0,
         total_apps=total_apps or 0,
         total_cards=total_cards or 0,
         used_cards=used_cards or 0,
-        active_devices=active_devices or 0,
-        total_revenue=total_revenue
+        active_devices=active_devices or 0
     )
 
 @router.get("/recent-heartbeats")

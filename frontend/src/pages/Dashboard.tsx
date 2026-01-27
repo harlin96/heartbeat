@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AppWindow, CreditCard, Users, Laptop, DollarSign, Activity } from 'lucide-react';
+import { AppWindow, CreditCard, Users, Laptop, Activity } from 'lucide-react';
 import { dashboardAPI } from '../api';
 
 interface Stats {
@@ -8,7 +8,6 @@ interface Stats {
   total_cards: number;
   used_cards: number;
   active_devices: number;
-  total_revenue: number;
 }
 
 export default function Dashboard() {
@@ -38,7 +37,6 @@ export default function Dashboard() {
     { label: '已使用卡密', value: stats?.used_cards || 0, icon: CreditCard, color: 'bg-yellow-500' },
     { label: '活跃设备', value: stats?.active_devices || 0, icon: Laptop, color: 'bg-purple-500' },
     { label: '用户数量', value: stats?.total_users || 0, icon: Users, color: 'bg-pink-500' },
-    { label: '总收入', value: `¥${stats?.total_revenue || 0}`, icon: DollarSign, color: 'bg-red-500' },
   ];
 
   return (

@@ -53,8 +53,7 @@ async def create_cards(
             card_type=data.card_type,
             duration_days=duration_days,
             application_id=data.application_id,
-            creator_id=current_user.id,
-            price=data.price
+            creator_id=current_user.id
         )
         db.add(card)
         cards.append(card)

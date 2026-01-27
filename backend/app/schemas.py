@@ -17,8 +17,6 @@ class UserResponse(BaseModel):
     id: int
     username: str
     role: UserRole
-    balance: float
-    discount: float
     is_active: bool
     created_at: datetime
     
@@ -66,7 +64,6 @@ class CardCreate(BaseModel):
     card_type: CardType
     application_id: int
     count: int = 1  # 生成数量
-    price: float = 0.0
 
 class CardResponse(BaseModel):
     id: int
@@ -74,7 +71,6 @@ class CardResponse(BaseModel):
     card_type: CardType
     duration_days: int
     application_id: int
-    price: float
     is_used: bool
     used_by: Optional[str]
     used_at: Optional[datetime]
@@ -113,12 +109,6 @@ class HeartbeatResponse(BaseModel):
 class AgentCreate(BaseModel):
     username: str
     password: str
-    discount: float = 1.0  # 折扣率
-
-class AgentRecharge(BaseModel):
-    user_id: int
-    amount: float
-    remark: Optional[str] = None
 
 # ==================== 统计相关 ====================
 class DashboardStats(BaseModel):
@@ -127,7 +117,6 @@ class DashboardStats(BaseModel):
     total_cards: int
     used_cards: int
     active_devices: int
-    total_revenue: float
 
 # ==================== 设备相关 ====================
 class DeviceResponse(BaseModel):

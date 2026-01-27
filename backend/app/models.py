@@ -25,8 +25,6 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(SQLEnum(UserRole), default=UserRole.USER)
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 上级代理
-    balance = Column(Float, default=0.0)  # 余额
-    discount = Column(Float, default=1.0)  # 折扣率 (0.0-1.0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -65,7 +63,6 @@ class Card(Base):
     duration_days = Column(Integer, nullable=False)  # 有效天数
     application_id = Column(Integer, ForeignKey("applications.id"), nullable=False)
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    price = Column(Float, default=0.0)  # 价格
     is_used = Column(Boolean, default=False)
     used_by = Column(String(100), nullable=True)  # 使用者标识
     used_at = Column(DateTime, nullable=True)
@@ -107,15 +104,3 @@ class HeartbeatLog(Base):
     message = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# 充值记录表
-class RechargeLog(Base):
-    __tablename__ = "recharge_logs"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    amount = Column(Float, nullable=False)
-    before_balance = Column(Float, nullable=False)
-    after_balance = Column(Float, nullable=False)
-    remark = Column(String(255), nullable=True)
-    operator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
