@@ -7,9 +7,9 @@
 set -e
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
-# ========== 请修改为您的Git仓库地址 ==========
-GIT_REPO="https://github.com/您的用户名/heartbeat.git"
-# =============================================
+# ========== Git仓库地址 ==========
+GIT_REPO="https://github.com/harlin96/heartbeat.git"
+# ==================================
 
 INSTALL_DIR="/opt/heartbeat"
 ADMIN_PASS=$(openssl rand -base64 12)
