@@ -4,6 +4,8 @@ import Dashboard from './pages/Dashboard';
 import Applications from './pages/Applications';
 import Cards from './pages/Cards';
 import Agents from './pages/Agents';
+import Settings from './pages/Settings';
+import Docs from './pages/Docs';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="applications" element={<Applications />} />
           <Route path="cards" element={<Cards />} />
           <Route path="agents" element={<Agents />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="docs" element={<Docs />} />
         </Route>
       </Routes>
     </BrowserRouter>

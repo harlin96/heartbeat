@@ -116,7 +116,7 @@ export const cardAPI = {
 export const agentAPI = {
   list: () => api.get('/agents'),
   create: (data: any) => api.post('/agents', data),
-  recharge: (data: any) => api.post('/agents/recharge', data),
+  toggleStatus: (id: number, is_active: boolean) => api.put(`/agents/${id}/status?is_active=${is_active}`),
 };
 
 export const dashboardAPI = {

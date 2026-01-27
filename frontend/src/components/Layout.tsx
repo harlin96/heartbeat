@@ -1,11 +1,13 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, AppWindow, CreditCard, Users, LogOut, Heart } from 'lucide-react';
+import { LayoutDashboard, AppWindow, CreditCard, Users, LogOut, Heart, Settings, Book } from 'lucide-react';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘' },
   { path: '/applications', icon: AppWindow, label: '应用管理' },
   { path: '/cards', icon: CreditCard, label: '卡密管理' },
   { path: '/agents', icon: Users, label: '代理管理' },
+  { path: '/docs', icon: Book, label: '开发文档' },
+  { path: '/settings', icon: Settings, label: '系统设置' },
 ];
 
 export default function Layout() {

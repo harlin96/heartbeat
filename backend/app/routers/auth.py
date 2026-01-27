@@ -45,16 +45,24 @@ async def get_me(current_user: User = Depends(get_current_user)):
     """获取当前用户信息"""
     return current_user
 
-@router.post("/change-password")
+@router.put("/change-password")
 async def change_password(
-    old_password: str,
-    new_password: str,
+    data: dict,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """修改密码"""
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+    
+    if not old_password or not new_password:
+        raise HTTPException(status_code=400, detail="缺少密码参数")
+    
     if not verify_password(old_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="原密码错误")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="新密码长度至少6位")
     
     current_user.password_hash = get_password_hash(new_password)
     await db.commit()
