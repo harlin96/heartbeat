@@ -36,7 +36,9 @@ class Settings(BaseSettings):
     
     # 管理员配置
     ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
+    _admin_password_env: str = os.getenv("ADMIN_PASSWORD", "")
+    ADMIN_PASSWORD: str = _admin_password_env if _admin_password_env else secrets.token_urlsafe(12)
+    ADMIN_PASSWORD_AUTO_GENERATED: bool = not _admin_password_env
     
     # 服务器配置
     HOST: str = "0.0.0.0"

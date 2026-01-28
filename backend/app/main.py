@@ -34,7 +34,15 @@ async def lifespan(app: FastAPI):
             )
             db.add(admin)
             await db.commit()
-            print(f"[初始化] 创建管理员账户: {settings.ADMIN_USERNAME}")
+            print(f"")
+            print(f"{'='*50}")
+            print(f"  管理员账户已创建")
+            print(f"  用户名: {settings.ADMIN_USERNAME}")
+            print(f"  密码: {settings.ADMIN_PASSWORD}")
+            if settings.ADMIN_PASSWORD_AUTO_GENERATED:
+                print(f"  (密码已自动生成，请及时保存!)")
+            print(f"{'='*50}")
+            print(f"")
     
     print(f"[启动] {settings.APP_NAME} v{settings.APP_VERSION}")
     print(f"[启动] 管理后台: http://{settings.HOST}:{settings.PORT}")
