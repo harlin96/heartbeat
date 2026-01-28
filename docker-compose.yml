@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: heartbeat-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=heartbeat
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-heartbeat123}
+      - POSTGRES_DB=heartbeat
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heartbeat -d heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - heartbeat-network
+
   backend:
     build: ./backend
     container_name: heartbeat-backend
@@ -10,15 +28,16 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - DATABASE_URL=sqlite+aiosqlite:///./data/heartbeat.db
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - DATABASE_URL=postgresql+asyncpg://heartbeat:${DB_PASSWORD:-heartbeat123}@db:5432/heartbeat
       - DEBUG=false
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-    volumes:
-      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -55,4 +74,5 @@ networks:
     driver: bridge
 
 volumes:
+  postgres-data:
   redis-data:
