@@ -2,14 +2,19 @@ import secrets
 import hashlib
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from typing import List, Optional
+import csv
+import io
 from app.database import get_db
 from app.models import Card, CardType, Application, User, Device, UserRole
 from app.schemas import CardCreate, CardResponse, CardActivate, CardActivateResponse
 from app.auth import get_current_user, get_agent_or_admin
 from app.middleware import limiter, verify_nonce, record_failed_attempt, get_client_ip
+from app.pagination import PaginationParams, PaginatedResponse
+from app.exceptions import NotFoundError, ForbiddenError
 
 router = APIRouter(prefix="/cards", tags=["卡密管理"])
 
@@ -63,20 +68,73 @@ async def create_cards(
         await db.refresh(card)
     return cards
 
-@router.get("", response_model=List[CardResponse])
+@router.get("")
 async def list_cards(
-    application_id: Optional[int] = Query(None),
-    is_used: Optional[bool] = Query(None),
-    card_type: Optional[CardType] = Query(None),
-    limit: int = Query(100, le=1000),
-    offset: int = Query(0),
+    application_id: Optional[int] = Query(None, description="应用ID"),
+    is_used: Optional[bool] = Query(None, description="是否已使用"),
+    card_type: Optional[CardType] = Query(None, description="卡密类型"),
+    keyword: Optional[str] = Query(None, description="搜索关键词"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_agent_or_admin)
 ):
-    """获取卡密列表"""
-    query = select(Card)
+    """获取卡密列表（支持分页和搜索）"""
+    # 基础查询
+    base_query = select(Card)
+    count_query = select(func.count(Card.id))
     
     # 非管理员只能看自己创建的
+    if current_user.role != UserRole.ADMIN:
+        base_query = base_query.where(Card.creator_id == current_user.id)
+        count_query = count_query.where(Card.creator_id == current_user.id)
+    
+    # 过滤条件
+    if application_id:
+        base_query = base_query.where(Card.application_id == application_id)
+        count_query = count_query.where(Card.application_id == application_id)
+    if is_used is not None:
+        base_query = base_query.where(Card.is_used == is_used)
+        count_query = count_query.where(Card.is_used == is_used)
+    if card_type:
+        base_query = base_query.where(Card.card_type == card_type)
+        count_query = count_query.where(Card.card_type == card_type)
+    if keyword:
+        base_query = base_query.where(Card.card_key.contains(keyword))
+        count_query = count_query.where(Card.card_key.contains(keyword))
+    
+    # 获取总数
+    total = await db.scalar(count_query) or 0
+    
+    # 分页查询
+    offset = (page - 1) * page_size
+    base_query = base_query.order_by(Card.created_at.desc()).offset(offset).limit(page_size)
+    result = await db.execute(base_query)
+    items = result.scalars().all()
+    
+    total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+    
+    return {
+        "items": [CardResponse.model_validate(item) for item in items],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1
+    }
+
+@router.get("/export/csv")
+async def export_cards_csv(
+    application_id: Optional[int] = Query(None, description="应用ID"),
+    is_used: Optional[bool] = Query(None, description="是否已使用"),
+    card_type: Optional[CardType] = Query(None, description="卡密类型"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_agent_or_admin)
+):
+    """导出卡密为CSV文件"""
+    query = select(Card)
+    
     if current_user.role != UserRole.ADMIN:
         query = query.where(Card.creator_id == current_user.id)
     
@@ -87,9 +145,33 @@ async def list_cards(
     if card_type:
         query = query.where(Card.card_type == card_type)
     
-    query = query.order_by(Card.created_at.desc()).offset(offset).limit(limit)
+    query = query.order_by(Card.created_at.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    cards = result.scalars().all()
+    
+    # 生成CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['卡密', '类型', '时长(天)', '状态', '创建时间', '激活时间', '到期时间'])
+    
+    type_names = {'day': '日卡', 'week': '周卡', 'month': '月卡', 'year': '年卡', 'permanent': '永久'}
+    for card in cards:
+        writer.writerow([
+            card.card_key,
+            type_names.get(card.card_type.value, card.card_type.value),
+            card.duration_days,
+            '已使用' if card.is_used else '未使用',
+            card.created_at.strftime('%Y-%m-%d %H:%M:%S') if card.created_at else '',
+            card.activated_at.strftime('%Y-%m-%d %H:%M:%S') if card.activated_at else '',
+            card.expires_at.strftime('%Y-%m-%d %H:%M:%S') if card.expires_at else ''
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=cards_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+    )
 
 @router.get("/{card_key}", response_model=CardResponse)
 async def get_card(
