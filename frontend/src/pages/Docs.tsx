@@ -141,6 +141,133 @@ while True:
 
         <section className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-2 mb-4">
+            <Code className="w-5 h-5 text-yellow-500" />
+            <h2 className="text-lg font-semibold">JavaScript / Node.js 代码示例</h2>
+          </div>
+          <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">{`// Node.js 示例 (需要 npm install axios crypto)
+const axios = require('axios');
+const crypto = require('crypto');
+const os = require('os');
+
+class HeartbeatClient {
+  constructor(serverUrl, appKey) {
+    this.serverUrl = serverUrl.replace(/\\/$/, '');
+    this.appKey = appKey;
+    this.token = null;
+    this.deviceId = this._getDeviceId();
+  }
+
+  _getDeviceId() {
+    const info = \`\${os.hostname()}-\${os.platform()}-\${os.arch()}\`;
+    return crypto.createHash('md5').update(info).digest('hex');
+  }
+
+  async activate(cardKey) {
+    try {
+      const resp = await axios.post(\`\${this.serverUrl}/api/heartbeat/activate\`, {
+        card_key: cardKey,
+        device_id: this.deviceId
+      });
+      if (resp.data.success) {
+        this.token = resp.data.token;
+      }
+      return resp.data;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  async heartbeat() {
+    if (!this.token) {
+      return { success: false, message: '未激活' };
+    }
+    try {
+      const resp = await axios.post(\`\${this.serverUrl}/api/heartbeat/check\`, {
+        app_key: this.appKey,
+        token: this.token,
+        device_id: this.deviceId
+      });
+      return resp.data;
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+}
+
+// 使用示例
+const client = new HeartbeatClient('https://harlin.de5.net', '你的app_key');
+
+// 激活卡密
+client.activate('XXXX-XXXX-XXXX-XXXX').then(result => {
+  console.log('激活结果:', result);
+  
+  // 定时心跳
+  setInterval(async () => {
+    const heartbeatResult = await client.heartbeat();
+    if (!heartbeatResult.success) {
+      console.error('授权验证失败:', heartbeatResult.message);
+    }
+  }, 60000); // 每60秒
+});`}</pre>
+
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-gray-800 mb-2">浏览器端使用</h4>
+            <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">{`// 浏览器示例 (使用 fetch API)
+class HeartbeatClient {
+  constructor(serverUrl, appKey) {
+    this.serverUrl = serverUrl.replace(/\\/$/, '');
+    this.appKey = appKey;
+    this.token = localStorage.getItem('heartbeat_token');
+    this.deviceId = this._getDeviceId();
+  }
+
+  _getDeviceId() {
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+      deviceId = 'web-' + Math.random().toString(36).substr(2, 9) + Date.now();
+      localStorage.setItem('device_id', deviceId);
+    }
+    return deviceId;
+  }
+
+  async activate(cardKey) {
+    const resp = await fetch(\`\${this.serverUrl}/api/heartbeat/activate\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ card_key: cardKey, device_id: this.deviceId })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      this.token = data.token;
+      localStorage.setItem('heartbeat_token', data.token);
+    }
+    return data;
+  }
+
+  async heartbeat() {
+    if (!this.token) return { success: false, message: '未激活' };
+    const resp = await fetch(\`\${this.serverUrl}/api/heartbeat/check\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_key: this.appKey,
+        token: this.token,
+        device_id: this.deviceId
+      })
+    });
+    return await resp.json();
+  }
+}
+
+// 使用
+const client = new HeartbeatClient('https://harlin.de5.net', '你的app_key');
+await client.activate('XXXX-XXXX-XXXX-XXXX');
+setInterval(() => client.heartbeat(), 60000);`}</pre>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-4">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <h2 className="text-lg font-semibold">使用流程</h2>
           </div>
