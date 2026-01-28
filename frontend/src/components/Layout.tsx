@@ -20,8 +20,8 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      <aside className="w-64 bg-white shadow-lg">
+    <div className="h-screen bg-gray-100 flex overflow-hidden">
+      <aside className="w-64 bg-white shadow-lg flex-shrink-0 overflow-y-auto">
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
             <Heart className="w-8 h-8 text-red-500" />
@@ -52,7 +52,7 @@ export default function Layout() {
           </button>
         </nav>
       </aside>
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto">
         <Outlet />
       </main>
     </div>
